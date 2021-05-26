@@ -5,16 +5,16 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 
@@ -62,6 +62,9 @@ public class RenamePane extends BorderPane {
     /** Display string for the group number column */
     private static String GROUP_COLUMN = "Group Number";
 
+    /** Property determining if the user can rename the files. cannot rename until all fields are filled */
+    private BooleanProperty renameDisabled = new SimpleBooleanProperty(true);
+
     /**
      * Constructor
      */
@@ -75,6 +78,7 @@ public class RenamePane extends BorderPane {
     public void BuildUI() {
         // Setup the UI elements at the top of the pane and place in a VBox
         Text title = new Text(RENAME_TOOL_TITLE);
+        title.getStyleClass().add("title");
         Text raceIdLabel = new Text(RACE_ID);
         TextField raceIdField = new TextField();
         // Bind the raceID to access it later
@@ -84,6 +88,7 @@ public class RenamePane extends BorderPane {
         raceIdPane.setAlignment(Pos.CENTER);
 
         Text currDirectory = new Text();
+        currDirectory.getStyleClass().add("text-id");
 
         Button chooseDirectoryBtn = new Button(CHOOSE_DIRECTORY_BTN);
 
@@ -101,7 +106,9 @@ public class RenamePane extends BorderPane {
 
         VBox renameVbox = new VBox();
         renameVbox.setAlignment(Pos.CENTER);
+        renameVbox.prefHeightProperty().bind(heightProperty().multiply(.20));
         Button renameBtn = new Button(RENAME_FILES_BTN);
+        renameBtn.disableProperty().bind(renameDisabled);
         renameBtn.setOnAction(e -> processCSVs());
 
         renameVbox.getChildren().addAll(renameBtn);
@@ -130,8 +137,16 @@ public class RenamePane extends BorderPane {
         int index = 1;
         for (File csv : csvDirectory.listFiles()) {
             Text currFile = new Text (csv.getName());
+            currFile.getStyleClass().add("filename");
             pathToCSVs.add(csv.getPath());
             TextField runGroup = new TextField();
+            runGroup.textProperty().addListener((obs, oldV, newV) -> {
+                if (!newV.isEmpty() && validateTextFields()) {
+                    renameDisabled.setValue(false);
+                } else {
+                    renameDisabled.setValue(true);
+                }
+            });
             // Bind the run group input field to a map of csv names so we don't have to search the scene graph later
             runGroups.put(csv.getPath(), new SimpleStringProperty());
             runGroups.get(csv.getPath()).bind(runGroup.textProperty());
@@ -198,5 +213,11 @@ public class RenamePane extends BorderPane {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /** Check all the text fields to see if they are filled and the user can rename the files */
+    private boolean validateTextFields() {
+        return raceId.isNotEmpty().get()
+                && runGroups.entrySet().stream().allMatch(k -> k.getValue().isNotEmpty().get());
     }
 }

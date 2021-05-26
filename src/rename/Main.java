@@ -12,8 +12,10 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
         RenamePane renamePane= new RenamePane();
         renamePane.BuildUI();
+        Scene scene = new Scene(renamePane, 1200, 800);
+        scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
         primaryStage.setTitle("VIR MARRS Rename Tool");
-        primaryStage.setScene(new Scene(renamePane, 1200, 800));
+        primaryStage.setScene(scene);
         primaryStage.show();
     }
 
